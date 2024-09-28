@@ -12,14 +12,14 @@ kb = ReplyKeyboardMarkup(resize_keyboard=True)
 kb2 = InlineKeyboardMarkup(resize_keyboard=True)
 buy_kb = InlineKeyboardMarkup(
     inline_keyboard=[
-        [InlineKeyboardButton(text='Friend1', callback_data='product_buying')],
-        [InlineKeyboardButton(text='Friend2', callback_data='product_buying')],
-        [InlineKeyboardButton(text='Friend3', callback_data='product_buying')],
-        [InlineKeyboardButton(text='Friend4', callback_data='product_buying')]
-    ],resize_keyboard=True)
+        [InlineKeyboardButton(text='Product1', callback_data='product_buying')],
+        [InlineKeyboardButton(text='Product2', callback_data='product_buying')],
+        [InlineKeyboardButton(text='Product3', callback_data='product_buying')],
+        [InlineKeyboardButton(text='Product4', callback_data='product_buying')]
+    ],resize_keyboard=True) # Для задания 14_3
 button1 = KeyboardButton(text='Рассчитать')
 button2 = KeyboardButton(text='Информация')
-button3 = KeyboardButton(text='Выбрать друга')  # Для задания 14_3
+button3 = KeyboardButton(text='Купить')  # Для задания 14_3
 kb.add(button1, button2, button3)
 button4 = InlineKeyboardButton(text='Рассчитать норму калорий', callback_data='calories')
 button5 = InlineKeyboardButton(text='Формулы расчёта', callback_data='formulas')
@@ -30,21 +30,21 @@ class UserState(StatesGroup):
     growth = State()
     weight = State()
 
-@dp.message_handler(text='Выбрать друга') # Для задания 14_3
+@dp.message_handler(text='Купить') # Для задания 14_3
 async def get_buying_list(message):
     with open('files/Друг1.jpg', 'rb') as img1:
-        await message.answer_photo(img1,"Название: Friend1 | Описание: Юрец | Цена: Пачка LM")
+        await message.answer_photo(img1,"Название: Product1 | Описание: 1 | Цена: 100")
     with open('files/Друг2.jpg', 'rb') as img2:
-        await message.answer_photo(img2,"Название: Friend2 | Описание: Ихтиёр | Цена: Пиво и чикенбургер")
+        await message.answer_photo(img2,"Название: Product2 | Описание: 2 | Цена: 200")
     with open('files/Друг3.jpg', 'rb') as img3:
-        await message.answer_photo(img3,"Название: Friend3 | Описание: Дубынин | Цена: Ферганский плов")
+        await message.answer_photo(img3,"Название: Product3 | Описание: 3 | Цена: 300")
     with open('files/Друг4.jpg', 'rb') as img4:
-        await message.answer_photo(img4,"Название: Friend4 | Описание: Дядя Лёня | Цена: Хумус из ВВ")
+        await message.answer_photo(img4,"Название: Product4 | Описание: 4 | Цена: 400")
     await message.answer('Выберите друга для дружбы:', reply_markup=buy_kb)
 
 @dp.callback_query_handler(text='product_buying') # Для задания 14_3
 async def send_confirm_message(call):
-    await call.message.answer('Вы успешно приобрели хорошего друга!')
+    await call.message.answer('Вы успешно приобрели продукт!')
     await call.answer()
 
 @dp.message_handler(text='Рассчитать')
