@@ -1,125 +1,65 @@
-from aiogram import Bot, Dispatcher, executor, types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-import asyncio
+import telebot
+from telebot import types
 
-api = ''
-bot = Bot(token=api)
-dp = Dispatcher(bot, storage=MemoryStorage())
-kb = ReplyKeyboardMarkup(resize_keyboard=True)
-kb2 = InlineKeyboardMarkup(resize_keyboard=True)
-buy_kb = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [InlineKeyboardButton(text='Product1', callback_data='product_buying')],
-        [InlineKeyboardButton(text='Product2', callback_data='product_buying')],
-        [InlineKeyboardButton(text='Product3', callback_data='product_buying')],
-        [InlineKeyboardButton(text='Product4', callback_data='product_buying')]
-    ],resize_keyboard=True) # Для задания 14_3
-button1 = KeyboardButton(text='Рассчитать')
-button2 = KeyboardButton(text='Информация')
-button3 = KeyboardButton(text='Купить')  # Для задания 14_3
-kb.add(button1, button2, button3)
-button4 = InlineKeyboardButton(text='Рассчитать норму калорий', callback_data='calories')
-button5 = InlineKeyboardButton(text='Формулы расчёта', callback_data='formulas')
-kb2.add(button3, button4)
+# BOT tokeni
+TOKEN = ""
+bot = telebot.TeleBot(8365726426:AAHdMQiltMYonkTSenyiDSD8H0eK9EzHtRY)
 
-class UserState(StatesGroup):
-    age = State()
-    growth = State()
-    weight = State()
+# obuna bolish kerak bolgan kanallar
+CHANNELS = [
+    "@https://t.me/life_shokh",
+]
 
-@dp.message_handler(text='Купить') # Для задания 14_3
-async def get_buying_list(message):
-    with open('files/Друг1.jpg', 'rb') as img1:
-        await message.answer_photo(img1,"Название: Product1 | Описание: 1 | Цена: 100")
-    with open('files/Друг2.jpg', 'rb') as img2:
-        await message.answer_photo(img2,"Название: Product2 | Описание: 2 | Цена: 200")
-    with open('files/Друг3.jpg', 'rb') as img3:
-        await message.answer_photo(img3,"Название: Product3 | Описание: 3 | Цена: 300")
-    with open('files/Друг4.jpg', 'rb') as img4:
-        await message.answer_photo(img4,"Название: Product4 | Описание: 4 | Цена: 400")
-    await message.answer('Выберите друга для дружбы:', reply_markup=buy_kb)
+# User kanallaga obuna bolganmi yoki yoq tekshrsh
+def check_user(user_id):
+    for ch in CHANNELS:
+        try:
+            status = bot.get_chat_member(ch, user_id).status
+            if status in ['left', 'kicked']:
+                return False
+        except:
+            return False
+    return True
 
-@dp.callback_query_handler(text='product_buying') # Для задания 14_3
-async def send_confirm_message(call):
-    await call.message.answer('Вы успешно приобрели продукт!')
-    await call.answer()
+# obuna bolmagan bolsa sorov berish
+def ask_to_subscribe(chat_id):
+    markup = types.InlineKeyboardMarkup()
 
-@dp.message_handler(text='Рассчитать')
-async def main_menu(message):
-    await message.answer('Выберите опцию:', reply_markup=kb2)
+    for ch in CHANNELS:
+        markup.add(types.InlineKeyboardButton(text=ch, url=f"https://t.me/{ch[1:]}"))
 
-@dp.callback_query_handler(text='formulas')
-async def get_formulas(call):
-    await call.message.answer('для мужчин:\n 10 х вес (кг) + 6,25 x рост (см) – 5 х возраст (г) + 5')
-    await call.answer()
+    markup.add(types.InlineKeyboardButton("tekshirish", callback_data="check"))
 
-@dp.message_handler(text='Информация')
-async def inform(message):
-    await message.answer('Информация о боте\n\nЭтот бот предназначен для расчетов калорий, '
-                         'основанных на вашей банковской карте\n\n'
-                         '(это шутка! НЕ передавайте НИКОМУ данные своей банковской карты\n'
-                         'этими данными могут воспользоваться мошенники)', reply_markup=kb)
+    bot.send_message(chat_id, "botdan foydalanish uchun kanallarga obuna boling", reply_markup=markup)
 
-@dp.callback_query_handler(text='calories')
-async def set_age(call):
-    await call.message.answer('Введите свой возраст:')
-    await UserState.age.set()
+# start bosilganda
+@bot.message_handler(commands=['start'])
+def start(message):
+    user_id = message.from_user.id
+    if check_user(user_id):
+        bot.send_message(message.chat.id, "botdan foydalanishingiz mumkin!")
+    else:
+        # agar obuna bolmagan bolsa
+        ask_to_subscribe(message.chat.id)
 
-@dp.message_handler(state=UserState.age)
-async def set_growth(message: types.Message, state):
-    try:
-        age = int(message.text)
-        if age <= 0:
-            raise ValueError("Возраст должен быть положительным числом.")
-        await state.update_data(age=age)
-        await message.answer('Введите свой рост в см:')
-        await UserState.growth.set()
-    except ValueError as e:
-        await message.answer(f"Ошибка ввода возраста: {e}\nПопробуйте снова:")
+# tekshrsh tugmasi bosilganda
+@bot.callback_query_handler(func=lambda call: call.data == "check")
+def check_callback(call):
+    user_id = call.from_user.id
+    if check_user(user_id):
+        bot.send_message(call.message.chat.id, "botdan foydalanishingiz mumkin!")
+    else:
+        bot.send_message(call.message.chat.id, "barcha kanallarga obuna bolmagansiz!")
+
+# har qanday habar kelganda tekshrsh
+@bot.message_handler(func=lambda message: True)
+def all_messages(message):
+    user_id = message.from_user.id
+    if not check_user(user_id):
+        ask_to_subscribe(message.chat.id)
         return
 
-@dp.message_handler(state=UserState.growth)
-async def set_weight(message: types.Message, state):
-    try:
-        growth = int(message.text)
-        if growth <= 0:
-            raise ValueError('Рост должен быть положительным числом.')
-        await state.update_data(growth=message.text)
-        await message.answer('Введите свой вес в кг:')
-        await UserState.weight.set()
-    except ValueError as e:
-        await message.answer(f"Ошибка ввода веса: {e}\nПопробуйте снова:")
-        return
+    bot.send_message(message.chat.id, f"Siz yozdingiz: {message.text}")
 
-@dp.message_handler(state=UserState.weight)
-async def send_calories(message: types.Message, state):
-    try:
-        weight = int(message.text)
-        if weight <= 0:
-            raise ValueError('Вес должен быть положительным числом.')
-        await state.update_data(weight=message.text)
-        data = await state.get_data()
-        age = int(data['age'])
-        growth = int(data['growth'])
-        weight = int(data['weight'])
-        calories = (10 * weight) + (6.25 * growth) - (5 * age) + 5
-        await message.answer(f'Ваша норма калорий: {calories:.2f}')
-        await state.finish()
-    except ValueError as e:
-        await message.answer(f"Ошибка ввода роста: {e}\nПопробуйте снова:")
-        return
+bot.polling()
 
-@dp.message_handler(commands=['start'])
-async def start(message):
-    await message.answer('Привет! Я бот помогающий твоему здоровью.', reply_markup=kb)
-
-@dp.message_handler()
-async def all_massages(message):
-    await message.answer('Введите команду /start, чтобы начать общение.')
-
-
-if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
